@@ -166,7 +166,8 @@ public class MemorySize implements java.io.Serializable, Comparable<MemorySize> 
                                         return ORDERED_UNITS.get(idx - 1);
                                     }
                                 })
-                        .orElse(BYTES);
+                        // every unit divides it: zero, or a whole number of the largest unit
+                        .orElse(bytes == 0 ? BYTES : TERA_BYTES);
 
         return String.format(
                 Locale.ROOT,

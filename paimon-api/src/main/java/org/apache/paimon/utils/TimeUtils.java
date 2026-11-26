@@ -177,7 +177,8 @@ public class TimeUtils {
                                         return orderedUnits.get(idx - 1);
                                     }
                                 })
-                        .orElse(TimeUnit.MILLISECONDS);
+                        // every unit divides it: zero, or a whole number of days
+                        .orElse(nanos == 0 ? TimeUnit.MILLISECONDS : TimeUnit.DAYS);
 
         return String.format(
                 "%d %s",

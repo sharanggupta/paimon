@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MemorySizeTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"0 bytes", "123 bytes", "1 kb", "2 mb", "3 gb"})
+    @ValueSource(strings = {"0 bytes", "123 bytes", "1 kb", "2 mb", "3 gb", "4 tb", "1024 tb"})
     void testLocaleIndependentRoundTrip(String value) {
         Locale originalLocale = Locale.getDefault(Locale.Category.FORMAT);
         try {
