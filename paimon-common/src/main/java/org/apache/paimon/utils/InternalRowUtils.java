@@ -91,13 +91,14 @@ public class InternalRowUtils {
                 if (((InternalMap) data1).size() != ((InternalMap) data2).size()) {
                     return false;
                 }
-                MapType mapType = (MapType) dataType;
+                DataType keyType = mapKeyType(dataType);
+                DataType valueType = mapValueType(dataType);
                 // Decide per operand. One MapType is represented by GenericMap, BinaryMap or
                 // ColumnarMap interchangeably -- which is why the conversion below exists at all --
                 // so gating data2's cast on data1's concrete class threw ClassCastException
                 // whenever the two sides happened to use different representations.
-                GenericMap map1 = toGenericMap((InternalMap) data1, mapType);
-                GenericMap map2 = toGenericMap((InternalMap) data2, mapType);
+                GenericMap map1 = toGenericMap((InternalMap) data1, keyType, valueType);
+                GenericMap map2 = toGenericMap((InternalMap) data2, keyType, valueType);
                 InternalArray keyArray1 = map1.keyArray();
                 InternalArray keyArray2 = map2.keyArray();
                 InternalArray valueArray1 = map1.valueArray();
@@ -111,8 +112,8 @@ public class InternalRowUtils {
                             keyArray2,
                             valueArray2,
                             matched,
-                            mapType.getKeyType(),
-                            mapType.getValueType())) {
+                            keyType,
+                            valueType)) {
                         return false;
                     }
                 }
@@ -184,22 +185,15 @@ public class InternalRowUtils {
                 result = 37 * result + hash(v, elementType);
             }
         } else if (data instanceof InternalMap) {
-            MapType mapType = (MapType) dataType;
-            GenericMap map;
-            if (data instanceof GenericMap) {
-                map = (GenericMap) data;
-            } else {
-                map =
-                        copyToGenericMap(
-                                (InternalMap) data, mapType.getKeyType(), mapType.getValueType());
-            }
+            DataType keyType = mapKeyType(dataType);
+            DataType valueType = mapValueType(dataType);
+            GenericMap map = toGenericMap((InternalMap) data, keyType, valueType);
             InternalArray keyArray = map.keyArray();
             InternalArray valueArray = map.valueArray();
             for (int i = 0; i < map.size(); i++) {
-                Object key = get(keyArray, i, mapType.getKeyType());
-                Object value = get(valueArray, i, mapType.getValueType());
-                result +=
-                        37 * hash(key, mapType.getKeyType()) + hash(value, mapType.getValueType());
+                Object key = get(keyArray, i, keyType);
+                Object value = get(valueArray, i, valueType);
+                result += 37 * hash(key, keyType) + hash(value, valueType);
             }
         } else if (data instanceof byte[]) {
             result = Arrays.hashCode((byte[]) data);
@@ -274,10 +268,23 @@ public class InternalRowUtils {
         return copyToGenericMap(map, keyType, valueType);
     }
 
-    private static GenericMap toGenericMap(InternalMap map, MapType mapType) {
+    private static GenericMap toGenericMap(InternalMap map, DataType keyType, DataType valueType) {
         return map instanceof GenericMap
                 ? (GenericMap) map
-                : copyToGenericMap(map, mapType.getKeyType(), mapType.getValueType());
+                : copyToGenericMap(map, keyType, valueType);
+    }
+
+    /** A multiset is stored as a map from its elements to their counts. */
+    private static DataType mapKeyType(DataType dataType) {
+        return dataType instanceof MultisetType
+                ? ((MultisetType) dataType).getElementType()
+                : ((MapType) dataType).getKeyType();
+    }
+
+    private static DataType mapValueType(DataType dataType) {
+        return dataType instanceof MultisetType
+                ? new IntType()
+                : ((MapType) dataType).getValueType();
     }
 
     private static GenericMap copyToGenericMap(

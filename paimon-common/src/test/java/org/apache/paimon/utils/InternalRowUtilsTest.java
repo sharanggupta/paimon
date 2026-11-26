@@ -324,6 +324,37 @@ public class InternalRowUtilsTest {
     }
 
     @Test
+    public void testEqualsAndHashForMultiset() {
+        DataType multisetType = DataTypes.MULTISET(DataTypes.STRING());
+
+        Map<Object, Object> entries = new HashMap<>();
+        entries.put(BinaryString.fromString("a"), 2);
+        Map<Object, Object> same = new HashMap<>(entries);
+        Map<Object, Object> otherCount = new HashMap<>();
+        otherCount.put(BinaryString.fromString("a"), 3);
+
+        assertThat(
+                        InternalRowUtils.equals(
+                                new GenericMap(entries), new GenericMap(same), multisetType))
+                .isTrue();
+        assertThat(
+                        InternalRowUtils.equals(
+                                new GenericMap(entries), new GenericMap(otherCount), multisetType))
+                .isFalse();
+        assertThat(InternalRowUtils.hash(new GenericMap(entries), multisetType))
+                .isEqualTo(InternalRowUtils.hash(new GenericMap(same), multisetType));
+
+        // a multiset column inside a row goes through the same code
+        RowType rowType = RowType.of(multisetType);
+        assertThat(
+                        InternalRowUtils.equals(
+                                GenericRow.of(new GenericMap(entries)),
+                                GenericRow.of(new GenericMap(same)),
+                                rowType))
+                .isTrue();
+    }
+
+    @Test
     public void testEqualsAcrossMapImplementations() {
         DataType mapType = DataTypes.MAP(DataTypes.STRING(), DataTypes.INT());
 
