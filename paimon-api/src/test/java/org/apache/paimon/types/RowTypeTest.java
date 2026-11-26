@@ -26,7 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Tests for {@link RowType#collectLeafPaths} and {@link RowType#projectByPaths}. */
+/** Tests for {@link RowType}. */
 class RowTypeTest {
 
     @Test
@@ -102,5 +102,23 @@ class RowTypeTest {
 
         RowType writeType = fullType.projectByPaths(Arrays.asList("nest.a", "nest.b"));
         assertThat(writeType.collectLeafPaths(fullType)).containsExactly("nest");
+    }
+
+    @Test
+    void isPrunedFromReturnsFalseWhenTargetLacksField() {
+        RowType full =
+                DataTypes.ROW(
+                        DataTypes.FIELD(1, "f", DataTypes.INT()),
+                        DataTypes.FIELD(2, "g", DataTypes.INT()));
+        RowType pruned = DataTypes.ROW(DataTypes.FIELD(1, "f", DataTypes.INT()));
+        RowType other =
+                DataTypes.ROW(
+                        DataTypes.FIELD(1, "f", DataTypes.INT()),
+                        DataTypes.FIELD(3, "h", DataTypes.INT()));
+
+        assertThat(pruned.isPrunedFrom(full)).isTrue();
+        assertThat(full.isPrunedFrom(pruned)).isFalse();
+        assertThat(other.isPrunedFrom(full)).isFalse();
+        assertThat(DataTypes.ARRAY(other).isPrunedFrom(DataTypes.ARRAY(full))).isFalse();
     }
 }

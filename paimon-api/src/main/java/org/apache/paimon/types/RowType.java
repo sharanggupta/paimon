@@ -264,7 +264,8 @@ public final class RowType extends DataType {
         }
         RowType rowType = (RowType) o;
         for (DataField field : fields) {
-            if (!field.isPrunedFrom(rowType.getField(field.id()))) {
+            if (!rowType.containsField(field.id())
+                    || !field.isPrunedFrom(rowType.getField(field.id()))) {
                 return false;
             }
         }
